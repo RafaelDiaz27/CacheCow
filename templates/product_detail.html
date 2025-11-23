@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="grid">
+    <article class="card">
+      <p class="badge">Product detail</p>
+      <h2>{{ product.name }}</h2>
+      <p class="muted">{{ product.description }}</p>
+      <div class="meta">
+        <span class="price">${{ '%.2f'|format(product.unit_price) }}</span>
+        {% if product.average_rating %}
+          <span class="pill">★ {{ product.average_rating }}</span>
+        {% endif %}
+        <span class="pill">Stock: {{ product.stock_qty }}</span>
+      </div>
+    </article>
+
+    <article class="card">
+      <h3>Buy</h3>
+      <form class="stack" method="post" action="{{ url_for('shop.cart_add') }}">
+        <input type="hidden" name="product_id" value="{{ product.product_id }}">
+        <div class="field">
+          <label for="qty">Quantity</label>
+          <input id="qty" type="number" name="quantity" value="1" min="1">
+        </div>
+        <button class="btn full" type="submit">Add to cart</button>
+      </form>
+    </article>
+  </section>
+{% endblock %}

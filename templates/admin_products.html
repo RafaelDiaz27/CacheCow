@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Admin</p>
+      <h1>Inventory</h1>
+      <p class="muted">Manage products: add, edit, remove.</p>
+    </div>
+    <a class="btn" href="{{ url_for('admin.product_new') }}">Add product</a>
+  </section>
+
+  <div class="stack">
+    {% for product in products %}
+      <article class="order-card">
+        <div class="meta">
+          <span class="pill">{{ product.name }}</span>
+          <span class="pill">Stock {{ product.stock_qty }}</span>
+          <span class="pill">${{ '%.2f'|format(product.unit_price) }}</span>
+          <span class="badge">{{ 'Active' if product.is_active else 'Inactive' }}</span>
+        </div>
+        <div class="muted">{{ product.description }}</div>
+        <div class="actions">
+          <a class="btn secondary" href="{{ url_for('admin.product_edit', product_id=product.product_id) }}">Edit</a>
+          <form method="post" action="{{ url_for('admin.product_delete', product_id=product.product_id) }}">
+            <button class="btn secondary" type="submit">Delete</button>
+          </form>
+        </div>
+      </article>
+    {% else %}
+      <p class="muted">No products.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

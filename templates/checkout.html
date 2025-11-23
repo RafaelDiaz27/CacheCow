@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Checkout</p>
+      <h1>Confirm & place order</h1>
+      <p class="muted">Shipping and payment details below. Cart totals reflect live stock decrements at purchase.</p>
+    </div>
+    <div class="pill">Total: <strong>${{ '%.2f'|format(total) }}</strong></div>
+  </section>
+
+  <section class="split">
+    <article class="card">
+      <h3>Shipping</h3>
+      <form class="stack" method="post">
+        <div class="field">
+          <label for="line_1">Address line 1</label>
+          <input id="line_1" type="text" name="line_1" required>
+        </div>
+        <div class="field">
+          <label for="city">City</label>
+          <input id="city" type="text" name="city" required>
+        </div>
+        <div class="field">
+          <label for="province">Province/State</label>
+          <input id="province" type="text" name="province" required>
+        </div>
+        <div class="field">
+          <label for="postal_code">Postal code</label>
+          <input id="postal_code" type="text" name="postal_code" required>
+        </div>
+        <div class="field">
+          <label for="country">Country</label>
+          <input id="country" type="text" name="country" required>
+        </div>
+
+        <div class="field">
+          <label for="payment_method_id">Payment method</label>
+          <select id="payment_method_id" name="payment_method_id" required>
+            {% for pm in payment_methods %}
+              <option value="{{ pm.payment_method_id }}">
+                {{ pm.type }} ending {{ pm.card_number_mask }}
+              </option>
+            {% else %}
+              <option value="0">No payment methods (placeholder)</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button class="btn full" type="submit">Place order</button>
+      </form>
+    </article>
+
+    <article class="card">
+      <h3>Items</h3>
+      <div class="stack">
+        {% for item in items %}
+          <div class="order-card">
+            <div class="meta">
+              <span class="price">${{ '%.2f'|format(item.product.unit_price) }}</span>
+              <span class="pill">x {{ item.quantity }}</span>
+            </div>
+            <div>{{ item.product.name }}</div>
+            <div class="muted">Line: ${{ '%.2f'|format(item.quantity * item.product.unit_price) }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+{% endblock %}

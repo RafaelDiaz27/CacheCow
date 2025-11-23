@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Order</p>
+      <h1>Order {{ order.order_number or order.order_id }}</h1>
+      <p class="muted">Placed {{ order.placed_at }} — Status: {{ order.status }}</p>
+    </div>
+    <div class="pill">Total: <strong>${{ order.total_amount }}</strong></div>
+  </section>
+
+  <section class="split">
+    <article class="card">
+      <h3>Items</h3>
+      <div class="stack">
+        {% for item in order.items %}
+          <div class="order-card">
+            <div class="meta">
+              <span class="pill">{{ item.qty }} x</span>
+              <span class="price">${{ item.unit_price_at_purchase }}</span>
+            </div>
+            <div>{{ item.product.name if item.product else 'Product ' ~ item.product_id }}</div>
+            <div class="muted">Line: ${{ item.line_total }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <article class="card">
+      <h3>Shipping</h3>
+      <p>{{ order.line_1 }}</p>
+      <p class="muted">{{ order.city }}, {{ order.province }} {{ order.postal_code }}, {{ order.country }}</p>
+
+      <h3>Tracking</h3>
+      <div class="stack">
+        {% for ev in order.tracking_events %}
+          <div class="pill">{{ ev.status }} — {{ ev.changed_at }}</div>
+        {% else %}
+          <p class="muted">No tracking updates.</p>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+{% endblock %}

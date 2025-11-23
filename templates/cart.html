@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Cart</p>
+      <h1>Review your picks</h1>
+      <p class="muted">Adjust quantities or jump to checkout. Stock is guarded by triggers at insert time.</p>
+    </div>
+  </section>
+
+  <form class="stack" method="post" action="{{ url_for('shop.cart_update') }}">
+    <table>
+      <tr>
+        <th>Product</th>
+        <th style="width:120px;">Qty</th>
+        <th>Price</th>
+        <th>Line</th>
+      </tr>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>
+            <input type="number" name="quantity_{{ item.cart_item_id }}" value="{{ item.quantity }}" min="0">
+          </td>
+          <td>${{ '%.2f'|format(item.product.unit_price) }}</td>
+          <td>${{ '%.2f'|format(item.quantity * item.product.unit_price) }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="muted">Cart is empty.</td></tr>
+      {% endfor %}
+    </table>
+    <div class="actions" style="justify-content: space-between; width: 100%; align-items: center;">
+      <div class="muted">Total: <span class="price">${{ '%.2f'|format(total) }}</span></div>
+      <div class="actions">
+        <button class="btn secondary" type="submit">Update cart</button>
+        {% if current_user.is_authenticated %}
+          <a class="btn" href="{{ url_for('shop.checkout') }}">Proceed to checkout</a>
+        {% else %}
+          <a class="btn" href="{{ url_for('auth.login') }}">Log in to checkout</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Payments</p>
+      <h1>Manage payment methods</h1>
+      <p class="muted">Add a card token/mask to use at checkout. Stored values here are placeholders only.</p>
+    </div>
+  </section>
+
+  <section class="split">
+    <article class="card">
+      <h3>Add payment method</h3>
+      <form class="stack" method="post">
+        <div class="field">
+          <label for="type">Type</label>
+          <input id="type" name="type" value="card">
+        </div>
+        <div class="field">
+          <label for="card_number_mask">Card mask / last4</label>
+          <input id="card_number_mask" name="card_number_mask" placeholder="••••4242">
+        </div>
+        <div class="field">
+          <label for="expiry_date">Expiry (YYYY-MM)</label>
+          <input id="expiry_date" name="expiry_date" type="month">
+        </div>
+        <button class="btn full" type="submit">Add</button>
+      </form>
+    </article>
+
+    <article class="card">
+      <h3>Saved methods</h3>
+      <div class="stack">
+        {% for pm in methods %}
+          <div class="order-card">
+            <div class="meta">
+              <span class="pill">{{ pm.type }}</span>
+              <span class="muted">{{ pm.card_number_mask }}</span>
+              {% if pm.expiry_date %}<span class="pill">Exp {{ pm.expiry_date }}</span>{% endif %}
+            </div>
+            <form method="post" action="{{ url_for('shop.delete_payment_method', pm_id=pm.payment_method_id) }}">
+              <button class="btn secondary" type="submit">Delete</button>
+            </form>
+          </div>
+        {% else %}
+          <p class="muted">No payment methods yet.</p>
+        {% endfor %}
+      </div>
+    </article>
+  </section>
+{% endblock %}

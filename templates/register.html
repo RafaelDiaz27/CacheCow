@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Account</p>
+      <h1>Create your account</h1>
+      <p class="muted">Save your info, earn points, and track orders with CacheCow.</p>
+    </div>
+  </section>
+
+  <div class="card" style="max-width: 520px;">
+    <form class="stack" method="post">
+      <div class="field">
+        <label for="first_name">First name</label>
+        <input id="first_name" type="text" name="first_name" required>
+      </div>
+      <div class="field">
+        <label for="last_name">Last name</label>
+        <input id="last_name" type="text" name="last_name" required>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" type="email" name="email" required>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password" name="password" required>
+      </div>
+      <button class="btn full" type="submit">Create account</button>
+    </form>
+    <p class="muted" style="margin-top:0.75rem;">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a>.</p>
+  </div>
+{% endblock %}

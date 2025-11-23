@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="badge">Orders</p>
+      <h1>Your history</h1>
+      <p class="muted">Recent purchases with live tracking events.</p>
+    </div>
+  </section>
+
+  <div class="stack">
+    {% for order in orders %}
+      <article class="order-card">
+        <div class="meta">
+          <span class="pill">#{{ order.order_number or order.order_id }}</span>
+          <span class="muted">{{ order.placed_at }}</span>
+          <span class="badge">{{ order.status }}</span>
+        </div>
+        <div class="muted">Total: ${{ order.total_amount }}</div>
+        <a class="btn secondary" href="{{ url_for('shop.order_detail', order_id=order.order_id) }}">View details</a>
+      </article>
+    {% else %}
+      <p class="muted">No orders yet.</p>
+    {% endfor %}
+  </div>
+{% endblock %}
