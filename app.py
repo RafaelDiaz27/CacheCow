@@ -5,6 +5,7 @@ from models import Account
 from auth_routes import auth_bp
 from shop_routes import shop_bp
 from admin_routes import admin_bp
+from seed_data import seed_defaults
 
 
 def create_app():
@@ -22,6 +23,12 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(shop_bp)
     app.register_blueprint(admin_bp)
+
+    # Auto-create tables and seed demo data for fresh clones.
+    if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        with app.app_context():
+            db.create_all()
+            seed_defaults()
 
     return app
 
