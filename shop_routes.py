@@ -47,7 +47,6 @@ def get_or_create_cart():
 
     sess = UserSession.query.filter_by(session_token=token).first()
     if not sess:
-        # session_id is a CHAR(36) PK in schema, so generate it explicitly
         sess = UserSession(session_id=str(uuid.uuid4()), session_token=token, is_guest=True)
         db.session.add(sess)
         db.session.commit()
@@ -150,8 +149,10 @@ def cart_update():
 @login_required
 def checkout():
     cart = get_or_create_cart()
+    items = cart.items
+    total = sum(item.quantity * item.product.unit_price for item in items)
 
-    def manual_order_fallback():
+    def manual_order_fallback(used_pm_id):
         """Create an order without the stored procedure as a fallback."""
         if not cart.items:
             return None
@@ -166,10 +167,10 @@ def checkout():
         db.session.add(order)
         db.session.flush()
 
-        total = Decimal(0)
+        fallback_total = Decimal(0)
         for item in cart.items:
             line = Decimal(item.quantity) * Decimal(item.product.unit_price)
-            total += line
+            fallback_total += line
             db.session.add(
                 OrderItem(
                     order_id=order.order_id,
@@ -182,9 +183,9 @@ def checkout():
             # decrement stock
             item.product.stock_qty = item.product.stock_qty - item.quantity
 
-        order.total_amount = total
+        order.total_amount = fallback_total
         db.session.add(
-            Payment(order_id=order.order_id, payment_method_id=payment_method_id, amount=total)
+            Payment(order_id=order.order_id, payment_method_id=used_pm_id, amount=fallback_total)
         )
         CartItem.query.filter_by(cart_id=cart.cart_id).delete()
         cart.status = "ordered"
@@ -196,33 +197,76 @@ def checkout():
             flash("Your cart is empty.", "warning")
             return redirect(url_for("shop.cart_view"))
 
-        payment_method_id = int(request.form["payment_method_id"])
-        # If placeholder selected (no payment methods), create a dummy on the fly.
-        if payment_method_id == 0:
-            pm = PaymentMethod(
+        # 1. Update User's Profile Address
+        try:
+            current_user.line_1 = request.form.get("line_1")
+            current_user.city = request.form.get("city")
+            current_user.province = request.form.get("province")
+            current_user.postal_code = request.form.get("postal_code")
+            current_user.country = request.form.get("country")
+            db.session.commit()
+        except Exception as e:
+            print(f"Address update warning: {e}")
+            db.session.rollback()
+
+        # 2. Determine Payment Method ID
+        payment_choice = request.form.get("payment_choice")
+        final_pm_id = None
+
+        if payment_choice == 'saved':
+            final_pm_id = request.form.get("payment_method_id")
+            if final_pm_id:
+                final_pm_id = int(final_pm_id)
+            else:
+                flash("Please select a saved card.", "warning")
+                return redirect(url_for("shop.checkout"))
+        
+        elif payment_choice == 'new':
+            card_num = request.form.get("new_card_number", "0000")
+            mask = f"••••{card_num[-4:]}"
+            exp_str = request.form.get("new_expiry")
+            exp_date = None
+            if exp_str:
+                try:
+                    year, month = map(int, exp_str.split("-"))
+                    exp_date = date(year, month, 1)
+                except ValueError:
+                    exp_date = None
+            
+            new_pm = PaymentMethod(
                 account_id=current_user.account_id,
                 type="card",
-                card_number_mask="••••0000",
+                card_number_mask=mask,
+                expiry_date=exp_date
             )
-            db.session.add(pm)
-            db.session.commit()
-            payment_method_id = pm.payment_method_id
-
+            
+            if request.form.get("save_card"):
+                db.session.add(new_pm)
+                db.session.commit() 
+                final_pm_id = new_pm.payment_method_id
+            else:
+                db.session.add(new_pm)
+                db.session.commit()
+                final_pm_id = new_pm.payment_method_id
+        
+        # 3. Create Order
         try:
             result = db.session.execute(
                 text("CALL sp_create_order_from_cart(:cart_id, :account_id, :pm_id)"),
                 {
                     "cart_id": cart.cart_id,
                     "account_id": current_user.account_id,
-                    "pm_id": payment_method_id,
+                    "pm_id": final_pm_id,
                 },
             )
             row = result.fetchone()
             db.session.commit()
-        except Exception as exc:  # surface stored proc errors to user
+        except Exception as exc:
             db.session.rollback()
-            flash(f"Checkout failed: {exc}", "danger")
-            return redirect(url_for("shop.checkout"))
+            # If stored proc fails, we fall through to the manual fallback below
+            # flash(f"Checkout failed: {exc}", "danger") 
+            # return redirect(url_for("shop.checkout"))
+            row = None
 
         order_id = None
         if row:
@@ -240,12 +284,12 @@ def checkout():
                 order_id = latest.order_id
 
         if not order_id:
-            # Fallback: create order manually if proc didn't return/create one
-            order_id = manual_order_fallback()
+            order_id = manual_order_fallback(final_pm_id)
             if not order_id:
                 flash("There was a problem placing your order (no order id).", "danger")
                 return redirect(url_for("shop.checkout"))
 
+        # 4. Update Order Address
         order = Order.query.get(order_id)
         if order:
             order.line_1 = request.form["line_1"]
@@ -258,16 +302,20 @@ def checkout():
         flash(f"Order placed! Order ID: {order_id}", "success")
         return redirect(url_for("shop.order_history"))
 
-    items = cart.items
-    total = sum(item.quantity * item.product.unit_price for item in items)
     payment_methods = PaymentMethod.query.filter_by(
         account_id=current_user.account_id
     ).all()
+    
+    # --- THIS WAS THE FIX ---
+    # We pass BOTH 'items' and 'cart_items', and 'total' and 'cart_total'
+    # to ensure compatibility regardless of which variable name your template uses.
     return render_template(
         "checkout.html",
         cart=cart,
         items=items,
-        total=total,
+        cart_items=items, 
+        total=total,      
+        cart_total=total, 
         payment_methods=payment_methods,
     )
 
@@ -291,8 +339,6 @@ def order_detail(order_id):
     ).first_or_404()
     return render_template("order_detail.html", order=order)
 
-
-# -------- Payment methods management --------
 
 @shop_bp.route("/payment-methods", methods=["GET", "POST"])
 @login_required

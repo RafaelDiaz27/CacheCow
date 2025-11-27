@@ -2,50 +2,107 @@
 {% block content %}
   <section class="hero">
     <div>
-      <p class="badge">Payments</p>
-      <h1>Manage payment methods</h1>
-      <p class="muted">Add a card token/mask to use at checkout. Stored values here are placeholders only.</p>
+      <p class="badge">Settings</p>
+      <h1>Wallet & Shipping</h1>
+      <p class="muted">Manage your saved payment methods and default shipping address.</p>
     </div>
   </section>
 
   <section class="split">
-    <article class="card">
-      <h3>Add payment method</h3>
-      <form class="stack" method="post">
-        <div class="field">
-          <label for="type">Type</label>
-          <input id="type" name="type" value="card">
-        </div>
-        <div class="field">
-          <label for="card_number_mask">Card mask / last4</label>
-          <input id="card_number_mask" name="card_number_mask" placeholder="••••4242">
-        </div>
-        <div class="field">
-          <label for="expiry_date">Expiry (YYYY-MM)</label>
-          <input id="expiry_date" name="expiry_date" type="month">
-        </div>
-        <button class="btn full" type="submit">Add</button>
-      </form>
-    </article>
+    
+    <div class="stack">
+      
+      <article class="card">
+        <h3>Add payment method</h3>
+        <form class="stack" method="post">
+          <input type="hidden" name="form_type" value="payment"> <div class="field">
+            <label for="type">Type</label>
+            <input id="type" name="type" value="card">
+          </div>
+          <div class="field">
+            <label for="card_number_mask">Card mask / last4</label>
+            <input id="card_number_mask" name="card_number_mask" placeholder="••••4242">
+          </div>
+          <div class="field">
+            <label for="expiry_date">Expiry (YYYY-MM)</label>
+            <input id="expiry_date" name="expiry_date" type="month">
+          </div>
+          <button class="btn full" type="submit">Add Card</button>
+        </form>
+      </article>
 
-    <article class="card">
-      <h3>Saved methods</h3>
-      <div class="stack">
-        {% for pm in methods %}
-          <div class="order-card">
-            <div class="meta">
-              <span class="pill">{{ pm.type }}</span>
-              <span class="muted">{{ pm.card_number_mask }}</span>
-              {% if pm.expiry_date %}<span class="pill">Exp {{ pm.expiry_date }}</span>{% endif %}
+      <article class="card">
+        <h3>Update Shipping Address</h3>
+        <form class="stack" method="post">
+          <input type="hidden" name="form_type" value="address"> <div class="field">
+            <label for="line_1">Address Line 1</label>
+            <input id="line_1" name="line_1" placeholder="123 Main St" value="{{ current_user.line_1 or '' }}">
+          </div>
+
+          <div class="field">
+            <label for="city">City</label>
+            <input id="city" name="city" placeholder="New York" value="{{ current_user.city or '' }}">
+          </div>
+
+          <div class="field">
+             <label for="province">Province / State</label>
+             <input id="province" name="province" placeholder="NY" value="{{ current_user.province or '' }}">
+          </div>
+
+          <div class="split-mobile"> <div class="field">
+              <label for="postal_code">Postal / Zip</label>
+              <input id="postal_code" name="postal_code" value="{{ current_user.postal_code or '' }}">
             </div>
-            <form method="post" action="{{ url_for('shop.delete_payment_method', pm_id=pm.payment_method_id) }}">
-              <button class="btn secondary" type="submit">Delete</button>
-            </form>
+            <div class="field">
+              <label for="country">Country</label>
+              <input id="country" name="country" value="{{ current_user.country or '' }}">
+            </div>
+          </div>
+
+          <button class="btn full" type="submit">Save Address</button>
+        </form>
+      </article>
+
+    </div>
+
+    <div class="stack">
+      
+      <article class="card">
+        <h3>Saved Cards</h3>
+        <div class="stack">
+          {% for pm in methods %}
+            <div class="order-card">
+              <div class="meta">
+                <span class="pill">{{ pm.type }}</span>
+                <span class="muted">{{ pm.card_number_mask }}</span>
+                {% if pm.expiry_date %}<span class="pill">Exp {{ pm.expiry_date }}</span>{% endif %}
+              </div>
+              <form method="post" action="{{ url_for('shop.delete_payment_method', pm_id=pm.payment_method_id) }}">
+                <button class="btn secondary" type="submit">Delete</button>
+              </form>
+            </div>
+          {% else %}
+            <p class="muted">No payment methods yet.</p>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="card">
+        <h3>Current Shipping Address</h3>
+        {% if current_user.line_1 %}
+          <div class="stack">
+             <p class="large">{{ current_user.line_1 }}</p>
+             <p class="muted">
+               {{ current_user.city }}, {{ current_user.province }}<br>
+               {{ current_user.postal_code }}<br>
+               {{ current_user.country }}
+             </p>
           </div>
         {% else %}
-          <p class="muted">No payment methods yet.</p>
-        {% endfor %}
-      </div>
-    </article>
+          <p class="muted">No address saved. Please use the form to add one.</p>
+        {% endif %}
+      </article>
+
+    </div>
   </section>
 {% endblock %}
